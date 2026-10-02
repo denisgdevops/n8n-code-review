@@ -7,6 +7,8 @@ public class UserRepository {
             username +
             "'";
 
+        String sql = "SELECT * FROM users WHERE username = '" + username + "'";
+
         return sql;
     }
 }
