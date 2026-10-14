@@ -7,7 +7,7 @@ public class UserRepository {
             username +
             "'";
 
-        String sql = "SELECT * FROM users WHERE username = '" + username + "'";
+        String sql = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
 
         return sql;
     }
