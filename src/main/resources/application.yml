@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: balance-enquiry-service
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+# Reviewer-supported explicit declaration; this does not configure runtime logging by itself.
+enterprise-review:
+  interface_profiles:
+    - bank_logging_profile
+server:
+  port: 8080

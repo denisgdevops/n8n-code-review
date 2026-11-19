@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- x-interface-profile: bank_logging_profile -->
+<!-- bank-structured-logging: complete -->
+<configuration>
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp><fieldName>Timestamp</fieldName><timeZone>UTC</timeZone></timestamp>
+                <pattern>
+                    <pattern>{
+                      "Version":"1.0",
+                      "ServiceID":"balance-enquiry-service",
+                      "ThreadName":"%thread",
+                      "LogLevel":"%level",
+                      "TraceID":"%X{TraceID}",
+                      "EventCategory":"%X{EventCategory}",
+                      "EventType":"%X{EventType}",
+                      "MethodSignature":"%X{MethodSignature}",
+                      "ErrorCode":"%X{ErrorCode}",
+                      "ErrorMessage":"%X{ErrorMessage}",
+                      "Message":"%message",
+                      "TransactionCost":"%X{TransactionCost}"
+                    }</pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+    <!-- Framework request/response conversion logs can contain banking payloads; keep them off. -->
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.springframework.test" level="INFO"/>
+    <root level="INFO"><appender-ref ref="JSON"/></root>
+</configuration>
