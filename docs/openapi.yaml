@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: Synthetic Balance Enquiry API
+  version: 1.0.0
+  description: Read-only synthetic banking API for enterprise compliance review testing.
+paths:
+  /api/v1/balances/enquiry:
+    post:
+      operationId: queryBalance
+      summary: Query a synthetic account balance
+      x-interface-profiles:
+        - bank_http_headers_profile
+        - balance_query_request_profile
+        - bank_response_headers_profile
+        - bank_response_envelope_profile
+        - balance_query_response_profile
+        - bank_http_error_mapping_profile
+      parameters:
+        - $ref: '#/components/parameters/XFeatureName'
+        - $ref: '#/components/parameters/XServiceCode'
+        - $ref: '#/components/parameters/XServiceName'
+        - $ref: '#/components/parameters/XChannelCategory'
+        - $ref: '#/components/parameters/XChannelCode'
+        - $ref: '#/components/parameters/XChannelName'
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/XCorrelationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BalanceRequest'
+            examples:
+              valid:
+                value:
+                  messageID: MSG-0001
+                  companyCode: BANK01
+                  primaryData:
+                    accountNumber: SYNTH-00000001
+      responses:
+        '200':
+          description: Successful balance enquiry (body statusCode 0 and statusDescription Success)
+          headers:
+            X-ElapsedTime:
+              required: true
+              description: Measured server processing time represented as a string.
+              schema: {type: string}
+            X-Correlation-ID:
+              required: true
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BalanceResponse'}
+        '400':
+          description: Standard 400 validation/not-found mapped to adopted HTTP 400 and body statusCode 1 Failed
+          headers:
+            X-ElapsedTime: {required: true, schema: {type: string}}
+            X-Correlation-ID: {required: true, schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '500':
+          description: Standard 500 mapped to adopted HTTP 500 and body statusCode 1 Failed
+          headers:
+            X-ElapsedTime: {required: true, schema: {type: string}}
+            X-Correlation-ID: {required: true, schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+components:
+  parameters:
+    XFeatureName: {name: X-FeatureName, in: header, required: true, schema: {type: string}}
+    XServiceCode: {name: X-ServiceCode, in: header, required: true, schema: {type: string}}
+    XServiceName: {name: X-ServiceName, in: header, required: true, schema: {type: string}}
+    XChannelCategory: {name: X-ChannelCategory, in: header, required: true, schema: {type: string}}
+    XChannelCode: {name: X-ChannelCode, in: header, required: true, schema: {type: string}}
+    XChannelName: {name: X-ChannelName, in: header, required: true, schema: {type: string}}
+    Authorization:
+      name: Authorization
+      in: header
+      required: true
+      description: Synthetic test credential; authentication may be gateway-owned in deployment.
+      schema: {type: string}
+    XCorrelationID:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      schema: {type: string, maxLength: 64, pattern: '^[A-Za-z0-9._-]+$'}
+  schemas:
+    AdditionalData:
+      type: object
+      required: [key, value]
+      properties:
+        key: {type: string, minLength: 1, maxLength: 30}
+        value: {type: string, minLength: 1, maxLength: 100}
+    BalanceRequest:
+      type: object
+      required: [messageID, companyCode, primaryData]
+      properties:
+        messageID: {type: string, minLength: 1, maxLength: 32}
+        companyCode: {type: string, minLength: 1, maxLength: 10}
+        primaryData:
+          type: object
+          required: [accountNumber]
+          properties:
+            accountNumber: {type: string, minLength: 1, maxLength: 32}
+        additionalData:
+          type: array
+          description: Optional key/value pairs; keys must be unique.
+          items: {$ref: '#/components/schemas/AdditionalData'}
+    ResponseEnvelope:
+      type: object
+      required: [statusCode, statusDescription, messageID, messageCode, messageDescription]
+      properties:
+        statusCode: {type: string, maxLength: 1}
+        statusDescription: {type: string, maxLength: 10}
+        messageID: {type: string, maxLength: 32}
+        conversationID: {type: string, maxLength: 32, nullable: true}
+        messageCode: {type: string, maxLength: 6}
+        messageDescription: {type: string, maxLength: 255}
+        errorInfo:
+          type: array
+          items: {$ref: '#/components/schemas/ErrorInfo'}
+    ErrorInfo:
+      type: object
+      properties:
+        errorCode: {type: string, maxLength: 6}
+        errorDescription: {type: string, maxLength: 255}
+    BalanceResponse:
+      allOf:
+        - $ref: '#/components/schemas/ResponseEnvelope'
+        - type: object
+          required: [primaryData]
+          properties:
+            primaryData:
+              type: object
+              required: [companyCode, currency, unclearedBalance, accountBalance, limitAmount, isAccountDormant, isPostingRestricted, workingBalance, lockedAmount, retentionAmount, accountName]
+              properties:
+                companyCode: {type: string, maxLength: 30}
+                currency: {type: string, maxLength: 6}
+                unclearedBalance: {type: number}
+                accountBalance: {type: number}
+                limitAmount: {type: number}
+                isAccountDormant: {type: string, maxLength: 1}
+                isPostingRestricted: {type: string, maxLength: 1}
+                workingBalance: {type: number}
+                lockedAmount: {type: number}
+                retentionAmount: {type: number}
+                accountName: {type: string, maxLength: 40}
+            additionalData:
+              type: array
+              items: {$ref: '#/components/schemas/AdditionalData'}
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ResponseEnvelope'
+        - type: object
+          required: [errorInfo]
